@@ -83,6 +83,7 @@ while true; do
         if [ "$selection" == "yes" ]; then
             display_installing
             wget --directory-prefix /usr/bin https://raw.githubusercontent.com/IAmDazen/bspmhost/refs/heads/main/bspm
+            chmod +x /usr/bin/bspm
             break 
         else
             display_ascii "Installation Cancelled"
