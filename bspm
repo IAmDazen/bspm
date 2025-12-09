@@ -1,0 +1,53 @@
+#!/bin/bash
+if [ ! -f "/usr/share/bspm/config.toml" ]
+then
+  wget --directory-prefix=/usr/share/bspm/ https://raw.githubusercontent.com/IAmDazen/bspmhost/refs/heads/main/autogen/config.toml
+fi
+repo=$(grep '^repo=' /usr/share/bspm/config.toml | cut -d'=' -f2- | tr -d ' "')
+if [ -z $1 ]
+then
+  echo Use \'-h\' or \'--help\' in order to see the usage of this command
+elif [ $1 == '-i' ] || [ $1 == '--install' ]
+then
+  if [ "$EUID" -ne 0 ]
+    then echo "Please run as root to install packages"
+    exit
+  fi
+  if curl -s --head https://raw.githubusercontent.com/$repo/refs/heads/main/$2.zip | head -n 1 | grep 'HTTP/2 404'; then
+      echo $2 is not a recognised package.
+  else
+    if [ ! -f "/usr/share/bspm/cache/$2.zip" ]; then
+        wget --directory-prefix=/usr/share/bspm/cache/ https://raw.githubusercontent.com/$repo/refs/heads/main/$2.zip
+    fi
+    unzip -d /usr/share/bspm/packages /usr/share/bspm/cache/$2.zip
+    ln -s /usr/share/bspm/packages/$2/rootcom.sh /usr/bin/$2
+    chmod +x /usr/bin/$2
+  fi
+elif [ $1 == '-h' ] || [ $1 == '--help' ]
+then
+  echo bspm [Argument] [Package Name]
+  echo Arguments
+  echo -i / --install : Installs a package from the current active repo. Default is https://github.com/IAmDazen/bspmhost
+  echo -h / --help : Displays this message
+  echo -u / --uninstall : Uninstalls a package and cleans up possible remnants from install
+  echo -fu / --full-uninstall : Uninstalls a package and removes the cached archive
+elif [ $1 == '-u' ] || [ $1 == '--uninstall' ]
+then
+    if [ "$EUID" -ne 0 ]
+    then echo "Please run as root to uninstall packages"
+    exit
+  fi
+  rm -rf /usr/bin/$2
+  rm -rf /usr/share/bspm/packages/$2
+elif [ $1 == '-fu' ] || [ $1 == '--full-uninstall' ]
+then
+    if [ "$EUID" -ne 0 ]
+    then echo "Please run as root to fully uninstall packages"
+    exit
+  fi
+  rm -rf /usr/bin/$2
+  rm -rf /usr/share/bspm/packages/$2
+  rm -rf /usr/share/bspm/cache/$2.zip
+else
+  echo $1 Is not a recognised argument. Use \'-h\' or \'--help\' to see all valid arguments.
+fi
